@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
+
+# Directorios de Datos y Resultados generados automáticamente
+# (No subir grandes volúmenes de datos sintéticos ni matrices de salida a Git)
+data/
+output/
+
+# C++ Build Files
+src_cpp/build/
+*.o
+*.out
+*.exe
