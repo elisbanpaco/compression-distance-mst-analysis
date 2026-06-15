@@ -3,126 +3,152 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <zlib.h>
-#include <omp.h>
+#include <sstream>
+#include <map>
 #include "prim.h"
 #include "kruskal.h"
 
+using namespace std;
+
 // ---------------------------------------------------------
-// 1. COMPRESSOR (ZLIB WRAPPER)
+// 1. HELPERS
 // ---------------------------------------------------------
-size_t get_compressed_size(const std::string& data) {
-    uLongf destLen = compressBound(data.size());
-    std::vector<Bytef> dest(destLen);
-    int res = compress(dest.data(), &destLen, reinterpret_cast<const Bytef*>(data.data()), data.size());
-    if (res != Z_OK) {
-        std::cerr << "Fallo al comprimir datos con zlib\n";
-        exit(1);
+vector<string> split(const string& str, char delim) {
+    vector<string> tokens;
+    string token;
+    istringstream tokenStream(str);
+    while (getline(tokenStream, token, delim)) {
+        tokens.push_back(token);
     }
-    return static_cast<size_t>(destLen);
+    return tokens;
 }
 
 // ---------------------------------------------------------
-// 2. NCD MATH (OPENMP PARALLEL)
+// 2. MAIN ENTRY POINT
 // ---------------------------------------------------------
-std::vector<std::vector<float>> compute_ncd_matrix(const std::vector<std::string>& students) {
-    size_t n = students.size();
-    std::vector<size_t> c_sizes(n);
-    
-    std::cout << "[NCD] Pre-calculando tamanos comprimidos independientes...\n";
-    #pragma omp parallel for
-    for (size_t i = 0; i < n; ++i) {
-        c_sizes[i] = get_compressed_size(students[i]);
-    }
-
-    std::vector<std::vector<float>> matrix(n, std::vector<float>(n, 0.0f));
-    size_t total_pairs = (n * (n - 1)) / 2;
-    std::cout << "[NCD] Calculando NCD para " << total_pairs << " pares en paralelo...\n";
-    
-    #pragma omp parallel for schedule(dynamic, 50)
-    for (size_t i = 0; i < n; ++i) {
-        if (i % 500 == 0) {
-            #pragma omp critical
-            std::cout << " -> Procesando estudiante " << i << " de " << n << "\n";
-        }
-        for (size_t j = i + 1; j < n; ++j) {
-            size_t c_xy = get_compressed_size(students[i] + students[j]);
-            size_t min_c = std::min(c_sizes[i], c_sizes[j]);
-            size_t max_c = std::max(c_sizes[i], c_sizes[j]);
-            
-            float ncd = static_cast<float>(c_xy - min_c) / static_cast<float>(max_c);
-            matrix[i][j] = ncd;
-            matrix[j][i] = ncd;
-        }
-    }
-    return matrix;
-}
-
-// ---------------------------------------------------------
-// 3. MAIN ENTRY POINT
-// ---------------------------------------------------------
-void save_mst_to_csv(const std::vector<Edge>& mst, const std::string& filename) {
-    std::ofstream out_mst(filename);
+void save_mst_to_csv(const vector<Edge>& mst, const string& filename, const vector<string>& var_names) {
+    ofstream out_mst(filename);
     if (!out_mst.is_open()) {
-        std::cerr << "[ERROR] Fallo al abrir: " << filename << "\n";
+        cerr << "[ERROR] Fallo al abrir: " << filename << "\n";
         return;
     }
     out_mst << "Source,Target,Weight\n";
     for (const auto& edge : mst) {
-        out_mst << edge.u << "," << edge.v << "," << edge.weight << "\n";
+        out_mst << var_names[edge.u] << "," << var_names[edge.v] << "," << edge.weight << "\n";
     }
     out_mst.close();
 }
 
 int main(int argc, char** argv) {
-    std::cout << "===============================================\n";
-    std::cout << "  NCD & MST CORE (HIGH-PERFORMANCE) \n";
-    std::cout << "===============================================\n\n";
+    cout << "===============================================\n";
+    cout << "  NCD & MST CORE (VARIABLES CORRELATION) \n";
+    cout << "===============================================\n\n";
 
-    std::string input_file = "../../data/students_serialized";
-    std::ifstream file(input_file);
-    if (!file.is_open()) {
-        input_file = "../data/students_serialized";
-        file.open(input_file);
-        if(!file.is_open()) {
-            std::cerr << "[ERROR] No se pudo abrir students_serialized\n";
-            return 1;
-        }
+    // Deteccion robusta del directorio base
+    string data_dir = "../../data/";
+    string out_dir = "../../output/";
+    
+    ifstream test_file("../../data/compression_weights.csv");
+    if (!test_file.is_open()) {
+        data_dir = "../data/";
+        out_dir = "../output/";
+    } else {
+        test_file.close();
     }
 
-    std::vector<std::string> students;
-    std::string line;
-    while (std::getline(file, line)) {
-        if (!line.empty()) students.push_back(line);
+    string input_file = data_dir + "compression_weights.csv";
+    ifstream file(input_file);
+    if (!file.is_open()) {
+        cerr << "[ERROR] No se pudo abrir " << input_file << "\n";
+        return 1;
+    }
+
+    string line;
+    // Skip header
+    getline(file, line);
+
+    vector<string> var_names;
+    map<string, int> var_to_idx;
+    
+    struct Record {
+        int u, v;
+        float c_x, c_y, c_xy;
+    };
+    
+    vector<Record> records;
+
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+        auto tokens = split(line, ',');
+        if (tokens.size() < 5) continue;
+        
+        string var1 = tokens[0];
+        string var2 = tokens[1];
+        float c_x = stof(tokens[2]);
+        float c_y = stof(tokens[3]);
+        float c_xy = stof(tokens[4]);
+        
+        if (var_to_idx.find(var1) == var_to_idx.end()) {
+            var_to_idx[var1] = var_names.size();
+            var_names.push_back(var1);
+        }
+        if (var_to_idx.find(var2) == var_to_idx.end()) {
+            var_to_idx[var2] = var_names.size();
+            var_names.push_back(var2);
+        }
+        
+        records.push_back({var_to_idx[var1], var_to_idx[var2], c_x, c_y, c_xy});
     }
     file.close();
 
-    size_t limit = students.size();
-    if (argc > 1) {
-        limit = std::stoull(argv[1]);
-        if (limit < students.size()) students.resize(limit);
-    }
-
-    std::cout << "[INFO] Cargados " << limit << " estudiantes exitosamente.\n";
-    if(students.size() > limit) students.resize(limit);
+    size_t V = var_names.size();
+    cout << "[INFO] Se cargaron " << V << " variables y " << records.size() << " combinaciones.\n";
 
     // 1. Matriz NCD
-    auto matrix = compute_ncd_matrix(students);
+    vector<vector<float>> matrix(V, vector<float>(V, 0.0f));
+    
+    string ncd_out_file = out_dir + "ncd_distances.csv";
+    ofstream out_ncd(ncd_out_file);
+    if (out_ncd.is_open()) {
+        out_ncd << "Var1,Var2,NCD_Weight\n";
+    }
+
+    cout << "[NCD] Calculando matriz NCD...\n";
+    for (const auto& rec : records) {
+        float min_c = min(rec.c_x, rec.c_y);
+        float max_c = max(rec.c_x, rec.c_y);
+        float ncd = (rec.c_xy - min_c) / max_c;
+        matrix[rec.u][rec.v] = ncd;
+        matrix[rec.v][rec.u] = ncd;
+        
+        if (out_ncd.is_open()) {
+            out_ncd << var_names[rec.u] << "," << var_names[rec.v] << "," << ncd << "\n";
+        }
+    }
+    
+    if (out_ncd.is_open()) {
+        out_ncd.close();
+        cout << "[EXITO] Distancias NCD exportadas a " << ncd_out_file << "\n";
+    }
 
     // 2. Prim
-    std::cout << "\n--- RUTA 1: ALGORITMO PRIM ---\n";
+    cout << "\n--- RUTA 1: ALGORITMO PRIM ---\n";
     auto mst_prim = compute_mst_prim(matrix);
-    std::string prim_out = "../../output/mst_edges_prim.csv";
-    save_mst_to_csv(mst_prim, prim_out);
-    std::cout << "[EXITO] Aristas PRIM exportadas en " << prim_out << "\n";
+    string prim_out = out_dir + "mst_edges_prim.csv";
+    save_mst_to_csv(mst_prim, prim_out, var_names);
+    if(ifstream(prim_out)) {
+        cout << "[EXITO] Aristas PRIM exportadas en " << prim_out << "\n";
+    }
 
     // 3. Kruskal
-    std::cout << "\n--- RUTA 2: ALGORITMO KRUSKAL ---\n";
+    cout << "\n--- RUTA 2: ALGORITMO KRUSKAL ---\n";
     auto mst_kruskal = compute_mst_kruskal(matrix);
-    std::string kruskal_out = "../../output/mst_edges_kruskal.csv";
-    save_mst_to_csv(mst_kruskal, kruskal_out);
-    std::cout << "[EXITO] Aristas KRUSKAL exportadas en " << kruskal_out << "\n";
+    string kruskal_out = out_dir + "mst_edges_kruskal.csv";
+    save_mst_to_csv(mst_kruskal, kruskal_out, var_names);
+    if(ifstream(kruskal_out)) {
+        cout << "[EXITO] Aristas KRUSKAL exportadas en " << kruskal_out << "\n";
+    }
 
-    std::cout << "\n[EXITO] Ejecucion completada satisfactoriamente.\n";
+    cout << "\n[EXITO] Ejecucion completada satisfactoriamente.\n";
     return 0;
 }
