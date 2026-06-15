@@ -6,20 +6,22 @@
 #include <limits>
 #include "edge.h"
 
-inline std::vector<Edge> compute_mst_prim(const std::vector<std::vector<float>>& matrix) {
+using namespace std;
+
+inline vector<Edge> compute_mst_prim(const vector<vector<float>>& matrix) {
     size_t V = matrix.size();
-    std::vector<Edge> mst;
+    vector<Edge> mst;
     mst.reserve(V - 1);
     
-    std::vector<bool> in_mst(V, false);
-    std::vector<float> min_weight(V, std::numeric_limits<float>::max());
-    std::vector<int> parent(V, -1);
+    vector<bool> in_mst(V, false);
+    vector<float> min_weight(V, numeric_limits<float>::max());
+    vector<int> parent(V, -1);
     
     min_weight[0] = 0.0f;
-    std::cout << "[MST-PRIM] Construyendo el Arbol de Expansion Minima (Prim)...\n";
+    cout << "[MST-PRIM] Construyendo el Arbol de Expansion Minima (Prim)...\n";
     
     for (size_t count = 0; count < V; ++count) {
-        float min_val = std::numeric_limits<float>::max();
+        float min_val = numeric_limits<float>::max();
         int u = -1;
         
         for (size_t v = 0; v < V; ++v) {
