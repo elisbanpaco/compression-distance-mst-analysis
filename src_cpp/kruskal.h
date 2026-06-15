@@ -7,6 +7,7 @@
 #include "edge.h"
 
 using namespace std;
+
 struct DisjointSet {
     vector<int> parent, rank;
     DisjointSet(int n) {
