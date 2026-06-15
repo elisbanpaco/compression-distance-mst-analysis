@@ -6,8 +6,9 @@
 #include <algorithm>
 #include "edge.h"
 
+using namespace std;
 struct DisjointSet {
-    std::vector<int> parent, rank;
+    vector<int> parent, rank;
     DisjointSet(int n) {
         parent.resize(n);
         rank.resize(n, 0);
@@ -35,29 +36,29 @@ struct DisjointSet {
     }
 };
 
-inline std::vector<Edge> compute_mst_kruskal(const std::vector<std::vector<float>>& matrix) {
+inline vector<Edge> compute_mst_kruskal(const vector<vector<float>>& matrix) {
     size_t V = matrix.size();
-    std::vector<Edge> all_edges;
+    vector<Edge> all_edges;
     size_t total_edges = (V * (V - 1)) / 2;
     all_edges.reserve(total_edges);
 
-    std::cout << "[MST-KRUSKAL] Extrayendo " << total_edges << " aristas de la matriz...\n";
+    cout << "[MST-KRUSKAL] Extrayendo " << total_edges << " aristas de la matriz...\n";
     for (size_t i = 0; i < V; ++i) {
         for (size_t j = i + 1; j < V; ++j) {
             all_edges.push_back({static_cast<int>(i), static_cast<int>(j), matrix[i][j]});
         }
     }
 
-    std::cout << "[MST-KRUSKAL] Ordenando aristas por peso...\n";
-    std::sort(all_edges.begin(), all_edges.end(), [](const Edge& a, const Edge& b) {
+    cout << "[MST-KRUSKAL] Ordenando aristas por peso...\n";
+    sort(all_edges.begin(), all_edges.end(), [](const Edge& a, const Edge& b) {
         return a.weight < b.weight;
     });
 
-    std::vector<Edge> mst;
+    vector<Edge> mst;
     mst.reserve(V - 1);
     DisjointSet ds(V);
 
-    std::cout << "[MST-KRUSKAL] Evaluando aristas con Disjoint-Set...\n";
+    cout << "[MST-KRUSKAL] Evaluando aristas con Disjoint-Set...\n";
     for (const auto& edge : all_edges) {
         if (ds.unite(edge.u, edge.v)) {
             mst.push_back(edge);
