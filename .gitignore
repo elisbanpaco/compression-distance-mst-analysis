@@ -4,14 +4,29 @@ __pycache__/
 *$py.class
 .venv/
 .env
+.pytest_cache/
+.mypy_cache/
 
 # Directorios de Datos y Resultados generados automáticamente
-# (No subir grandes volúmenes de datos sintéticos ni matrices de salida a Git)
-data/
-output/
+# Permitimos las carpetas base en Git (vía .gitkeep) pero ignoramos su contenido
+data/*
+!data/.gitkeep
+output/*
+!output/.gitkeep
 
-# C++ Build Files
+# C/C++ y Entorno de Compilación
 src_cpp/build/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+compile_commands.json
 *.o
 *.out
 *.exe
+*.so
+*.dylib
+
+# Archivos del Sistema Operativo
+.DS_Store
+Thumbs.db
