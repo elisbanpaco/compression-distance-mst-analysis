@@ -3,14 +3,14 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import os
 
-def visualize_mst(input_csv="../../output/mst_edges.csv", output_png="../../output/mst_graph.png"):
+def visualize_mst(input_csv, output_png, title):
     """
     Lee las aristas del Árbol de Expansión Mínima generadas por C++ 
-    y renderiza un grafo visual.
+    y renderiza un grafo visual donde los nodos son las variables.
     """
     print(f"[*] Leyendo aristas del MST desde: {input_csv}...")
     if not os.path.exists(input_csv):
-        print("[ERROR] El archivo MST no existe. Corre el ejecutable de C++ primero.")
+        print(f"[ERROR] El archivo MST no existe: {input_csv}")
         return
         
     df_edges = pd.read_csv(input_csv)
@@ -19,24 +19,31 @@ def visualize_mst(input_csv="../../output/mst_edges.csv", output_png="../../outp
     G = nx.Graph()
     
     for idx, row in df_edges.iterrows():
-        # Añadir arista. En networkx, weight más bajo significa más "cercano".
-        G.add_edge(int(row['Source']), int(row['Target']), weight=row['Weight'])
+        # Añadir arista con nombres de variables
+        G.add_edge(str(row['Source']), str(row['Target']), weight=row['Weight'])
         
     print(f"[+] Grafo creado con {G.number_of_nodes()} nodos y {G.number_of_edges()} aristas.")
     
-    print("[*] Calculando disposición (Layout) para el renderizado (puede tomar unos segundos)...")
-    # Usamos spring_layout que agrupa nodos conectados por pesos (distancias) cortos
-    # K ajusta la distancia óptima entre nodos.
-    pos = nx.spring_layout(G, k=0.15, iterations=50, seed=42)
+    print("[*] Calculando disposición (Layout) para el renderizado...")
+    # Usamos kamada_kawai_layout que es determinista y excelente para árboles (MST), 
+    # garantizando que ambas gráficas se vean idénticas y bien distribuidas.
+    pos = nx.kamada_kawai_layout(G)
     
-    plt.figure(figsize=(16, 12))
-    plt.title("Árbol de Expansión Mínima (NCD - Rendimiento Escolar)", fontsize=20, fontweight='bold')
+    plt.figure(figsize=(14, 10))
+    plt.title(title, fontsize=20, fontweight='bold')
     
-    # Dibujar las aristas con una transparencia sutil
-    nx.draw_networkx_edges(G, pos, alpha=0.3, edge_color='#555555')
+    # Dibujar las aristas con una transparencia sutil y añadir los pesos como etiquetas
+    nx.draw_networkx_edges(G, pos, alpha=0.5, edge_color='#555555', width=2)
     
-    # Dibujar los nodos con un color llamativo
-    nx.draw_networkx_nodes(G, pos, node_size=30, node_color='#00b4d8', alpha=0.8, edgecolors='white')
+    # Etiquetas de los pesos de las aristas
+    edge_labels = {(str(row['Source']), str(row['Target'])): f"{row['Weight']:.3f}" for idx, row in df_edges.iterrows()}
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=9, font_color='red')
+    
+    # Dibujar los nodos
+    nx.draw_networkx_nodes(G, pos, node_size=800, node_color='#00b4d8', alpha=0.9, edgecolors='white', linewidths=2)
+    
+    # Dibujar las etiquetas (nombres de las variables)
+    nx.draw_networkx_labels(G, pos, font_size=11, font_family="sans-serif", font_weight='bold')
     
     plt.axis('off')
     
@@ -46,8 +53,13 @@ def visualize_mst(input_csv="../../output/mst_edges.csv", output_png="../../outp
     plt.close()
 
 if __name__ == "__main__":
-    # Ajustar rutas si el script se corre desde la raíz del proyecto
-    if os.path.exists("output/mst_edges.csv"):
-        visualize_mst("output/mst_edges.csv", "output/mst_graph.png")
-    else:
-        visualize_mst()
+    visualize_mst(
+        input_csv="output/mst_edges_prim.csv", 
+        output_png="output/mst_graph_prim.png",
+        title="Árbol de Expansión Mínima (NCD - Prim)"
+    )
+    visualize_mst(
+        input_csv="output/mst_edges_kruskal.csv", 
+        output_png="output/mst_graph_kruskal.png",
+        title="Árbol de Expansión Mínima (NCD - Kruskal)"
+    )
