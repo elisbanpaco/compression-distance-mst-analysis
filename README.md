@@ -34,19 +34,24 @@ El proyecto implementa el patrón de diseño "la herramienta adecuada para el tr
 
 ```text
 compression-distance-mst-analysis/
-├── data/                       # Dataset inicial y pesos generados (Ignorado en Git)
-├── output/                     # Matrices NCD, MST en CSV y gráficos PNG (Ignorado en Git)
+├── data/                       # Dataset inicial y pesos generados
+├── output/                     # Matrices NCD, MST en CSV y gráficos PNG
 ├── src_python/                 # Scripts de orquestación y visualización
 │   ├── 01_data_generator.py    # Generador de 18,000 registros sintéticos (11 variables mixtas)
 │   ├── 02_preprocessor.py      # Serialización y extracción de pesos de compresión
-│   └── 04_visualizer.py        # Generador de grafos de correlación (NetworkX + Matplotlib)
+│   ├── 02b_hierarchical_preprocessor.py # Generación de particiones jerárquicas
+│   ├── 04_visualizer.py        # Generador de grafos de correlación (NetworkX + Matplotlib)
+│   ├── 04b_hierarchical_visualizer.py   # Visualizador de grafos de particiones
+│   └── 05b_topology_comparator.py       # Análisis comparativo y de volatilidad
 ├── src_cpp/                    # Motor de Alto Rendimiento (C++ Core)
 │   ├── edge.h                  # Estructura de abstracción de aristas
 │   ├── prim.h                  # Implementación matemática del Algoritmo de Prim
 │   ├── kruskal.h               # Implementación matemática del Algoritmo de Kruskal (Disjoint-Set)
 │   ├── main.cpp                # Orquestador del cómputo NCD + extracción del MST
+│   ├── hierarchical_main.cpp   # Core para las variantes jerárquicas
 │   └── CMakeLists.txt          # Reglas de construcción para el core
 ├── pyproject.toml              # Dependencias modernas de Python
+├── run_pipeline.py             # Orquestador automático del análisis
 └── README.md                   # Documentación principal
 ```
 
@@ -54,34 +59,18 @@ compression-distance-mst-analysis/
 
 ## 🚀 Guía de Ejecución
 
-### 1. Ingesta y Preprocesamiento (Python)
-Desde la raíz del proyecto, inicializa el entorno virtual, genera el dataset y prepara los pesos:
+### 1. Ingesta de Datos (Opcional)
+Si no cuentas con el archivo `data/dataset_estudiantes.csv`, genéralo primero:
 ```bash
 uv run src_python/01_data_generator.py
-uv run src_python/02_preprocessor.py
 ```
-*Esto poblará la carpeta `data/` con `dataset_estudiantes.csv` y los archivos de metadatos requeridos por C++.*
 
-### 2. Cálculo de la Matriz NCD y MST (C++)
-Construye el núcleo matemático y ejecuta los algoritmos de procesamiento de grafos:
+### 2. Ejecución Automatizada (Orquestador)
+Para limpiar archivos residuales, generar los cálculos de la variante jerárquica (NCD+MST en C++), renderizar visualizaciones y producir el reporte comparativo final, ejecuta:
 ```bash
-cd src_cpp
-mkdir -p build && cd build
-cmake ..
-make
-
-# Ejecutar el análisis matemático principal:
-./ncd_mst_main
+uv run run_pipeline.py
 ```
-*El sistema generará la matriz densa de distancias y exportará las aristas óptimas calculadas por Prim y Kruskal en la carpeta `output/`.*
-
-### 3. Renderizado del Grafo Final (Python)
-Regresa a la raíz del proyecto y genera la visualización de los clústeres:
-```bash
-cd ../../
-uv run src_python/04_visualizer.py
-```
-*Abre `output/mst_graph.png` para visualizar la topología de la información. Verás qué variables del rendimiento estudiantil agrupan características similares de acuerdo a su entropía computacional.*
+*El sistema se encargará de compilar el núcleo en C++ si es necesario, lanzar los preprocesadores, aplicar Kruskal/Prim para la topología, visualizarla y contrastar sus cambios estructurales automáticamente en la carpeta `output/`.*
 
 ---
 
