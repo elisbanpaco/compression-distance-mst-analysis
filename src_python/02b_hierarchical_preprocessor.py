@@ -67,6 +67,27 @@ def process_chunk(df_chunk, chunk_name, base_dir="data/hierarchical_comprimidas"
     print(f" -> Exportado pesos para {chunk_name} en: {weights_csv}")
 
 def preprocess_and_split(input_path="data/dataset_estudiantes.csv", target_col="Notas", num_partitions=2):
+    import glob
+    import shutil
+    
+    print("[*] Limpiando archivos temporales y resultados previos del pipeline jerárquico...")
+    for path in ["data/hierarchical_comprimidas", "data/hierarchical_combinadas"]:
+        if os.path.exists(path):
+            shutil.rmtree(path)
+            
+    for f in glob.glob("data/weights_*.csv"):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+            
+    for pattern in ["output/mst_edges_prim_*.csv", "output/mst_edges_kruskal_*.csv", "output/ncd_distances_*.csv"]:
+        for f in glob.glob(pattern):
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+
     print(f"\n[*] Leyendo dataset desde {input_path}...")
     if not os.path.exists(input_path):
         print(f"[ERROR] No se encontró el dataset original en {input_path}")
@@ -103,7 +124,7 @@ def preprocess_and_split(input_path="data/dataset_estudiantes.csv", target_col="
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocesador Jerárquico basado en Clustering Top-Down')
     parser.add_argument('--target', type=str, default='Notas', help='Columna objetivo para el ordenamiento (ej. Notas)')
-    parser.add_argument('--partitions', type=int, default=2, help='Número par total de particiones (N)') # cambia el default a N para el numero de particiones
+    parser.add_argument('--partitions', type=int, default=4, help='Número par total de particiones (N)') # cambia el default a N para el numero de particiones
     args = parser.parse_args()
     
     preprocess_and_split(target_col=args.target, num_partitions=args.partitions)
