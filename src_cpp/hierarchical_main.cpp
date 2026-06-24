@@ -140,27 +140,46 @@ int main(int argc, char** argv) {
     cout << "===============================================\n\n";
 
     // Deteccion robusta del directorio base
-    string data_dir = "../../data/";
-    string out_dir = "../../output/";
+    string data_dir = "data/";
+    string out_dir = "output/";
     
     if (!fs::exists(data_dir)) {
         data_dir = "../data/";
         out_dir = "../output/";
+        if (!fs::exists(data_dir)) {
+            data_dir = "../../data/";
+            out_dir = "../../output/";
+        }
+    }
+
+    if (!fs::exists(data_dir)) {
+        cerr << "[ERROR] No se pudo encontrar el directorio de datos (data/) en ninguna de las rutas esperadas (./, ../, ../../).\n";
+        return 1;
     }
 
     if (!fs::exists(out_dir)) {
-        fs::create_directories(out_dir);
+        try {
+            fs::create_directories(out_dir);
+        } catch (const fs::filesystem_error& e) {
+            cerr << "[ERROR] No se pudo crear el directorio de salida: " << e.what() << "\n";
+            return 1;
+        }
     }
 
     vector<string> weight_files;
-    for (const auto& entry : fs::directory_iterator(data_dir)) {
-        if (entry.is_regular_file()) {
-            string filename = entry.path().filename().string();
-            // Buscar solo los archivos generados por el pipeline jerárquico
-            if (filename.find("weights_") == 0 && filename.find(".csv") != string::npos && filename != "compression_weights.csv") {
-                weight_files.push_back(filename);
+    try {
+        for (const auto& entry : fs::directory_iterator(data_dir)) {
+            if (entry.is_regular_file()) {
+                string filename = entry.path().filename().string();
+                // Buscar solo los archivos generados por el pipeline jerárquico
+                if (filename.find("weights_") == 0 && filename.find(".csv") != string::npos && filename != "compression_weights.csv") {
+                    weight_files.push_back(filename);
+                }
             }
         }
+    } catch (const fs::filesystem_error& e) {
+        cerr << "[ERROR] Error leyendo el directorio de datos: " << e.what() << "\n";
+        return 1;
     }
 
     if (weight_files.empty()) {
