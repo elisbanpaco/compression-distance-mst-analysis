@@ -45,21 +45,22 @@ int main(int argc, char** argv) {
     cout << "===============================================\n\n";
 
     // Deteccion robusta del directorio base
-    string data_dir = "../../data/";
-    string out_dir = "../../output/";
+    string data_dir = "data/";
+    string out_dir = "output/";
     
-    ifstream test_file("../../data/compression_weights.csv");
-    if (!test_file.is_open()) {
+    if (!ifstream("data/compression_weights.csv")) {
         data_dir = "../data/";
         out_dir = "../output/";
-    } else {
-        test_file.close();
+        if (!ifstream("../data/compression_weights.csv")) {
+            data_dir = "../../data/";
+            out_dir = "../../output/";
+        }
     }
 
     string input_file = data_dir + "compression_weights.csv";
     ifstream file(input_file);
     if (!file.is_open()) {
-        cerr << "[ERROR] No se pudo abrir " << input_file << "\n";
+        cerr << "[ERROR] No se pudo abrir " << input_file << " en ninguna de las rutas esperadas (./, ../, ../../).\n";
         return 1;
     }
 
