@@ -110,8 +110,8 @@ Este comando:
 El análisis de volatilidad topológica (calculado por `05b_topology_comparator.py` e impreso en `output/topology_comparison_report.txt`) utiliza la **distancia de camino más corto en el MST** entre todas las variables. Para cada nodo (variable), se calcula la suma de distancias a todos los demás nodos.
 
 ### Cómo leer las diferencias ($B8C2 - B8C1$):
-* **Un incremento positivo ($+$)** significa que una variable se ha alejado (está más desconectada o es más independiente) en la segunda topología en comparación con la primera.
-* **Un decremento negativo ($-$)** indica que la variable se ha acercado (ha ganado relevancia o dependencia informativa) en la red de variables.
+* **Una diferencia positiva (MÁXIMO)** significa que una variable se ha alejado (está más desconectada o es más independiente) en la segunda topología en comparación con la primera.
+* **Una diferencia negativa (MÍNIMO)** indica que la variable se ha acercado (ha ganado relevancia o dependencia informativa) en la red de variables.
 
 **Ejemplo práctico:**
 En los resultados estudiantiles, es común notar cómo variables conductuales como `Acceso_Internet` o `Horas_Estudio` cambian drásticamente de posición en el MST de estudiantes de alto rendimiento (donde están estrechamente ligadas a las notas o horas de sueño) vs. estudiantes de bajo rendimiento (donde pueden estar ligadas de forma caótica a la latitud geográfica o edad).
