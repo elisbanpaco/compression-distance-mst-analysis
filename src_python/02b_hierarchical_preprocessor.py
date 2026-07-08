@@ -124,7 +124,7 @@ def preprocess_and_split(input_path="data/dataset_estudiantes.csv", target_col="
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocesador Jerárquico basado en Clustering Top-Down')
     parser.add_argument('--target', type=str, default='Notas', help='Columna objetivo para el ordenamiento (ej. Notas)')
-    parser.add_argument('--partitions', type=int, default=4, help='Número par total de particiones (N)') # cambia el default a N para el numero de particiones
+    parser.add_argument('--partitions', type=int, default=8, help='Número par total de particiones (N)') # cambia el default a N para el numero de particiones
     args = parser.parse_args()
     
     preprocess_and_split(target_col=args.target, num_partitions=args.partitions)
