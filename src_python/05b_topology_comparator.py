@@ -79,17 +79,11 @@ def compare_topologies(topo_sums):
         for node in sumsA.keys():
             diffs[node] = sumsB[node] - sumsA[node]
             
-        # Máximo absoluto o máximo incremento
+        # Máximo absoluto
         max_node = max(diffs, key=diffs.get)
-        
-        # Mínimo de los que son mayores a cero (> 0)
-        positive_diffs = {k: v for k, v in diffs.items() if v > 0}
-        if positive_diffs:
-            min_node = min(positive_diffs, key=positive_diffs.get)
-            min_val = positive_diffs[min_node]
-        else:
-            min_node = None
-            min_val = None
+
+        # Minimo absoluto
+        min_node = min(diffs, key=diffs.get)
             
         comparisons.append({
             'TopA': topA,
@@ -98,7 +92,7 @@ def compare_topologies(topo_sums):
             'MaxNode': max_node,
             'MaxVal': diffs[max_node],
             'MinNode': min_node,
-            'MinVal': min_val
+            'MinVal': diffs[min_node]
         })
         
     return comparisons
@@ -144,15 +138,12 @@ def main():
             f.write(header + "\n")
             
             # Imprimir MÁXIMO
-            msg_max = f"  -> MÁXIMO INCREMENTO: Nodo '{comp['MaxNode']}' con un aumento de +{comp['MaxVal']:.4f}"
+            msg_max = f"  -> MÁXIMO: Nodo '{comp['MaxNode']}' con una diferencia de {comp['MaxVal']:+.4f}"
             print(msg_max)
             f.write(msg_max + "\n")
             
-            # Imprimir MÍNIMO (> 0)
-            if comp['MinNode']:
-                msg_min = f"  -> MÍNIMO INCREMENTO (> 0): Nodo '{comp['MinNode']}' con un aumento de +{comp['MinVal']:.4f}"
-            else:
-                msg_min = "  -> MÍNIMO INCREMENTO (> 0): Ningún nodo tuvo un incremento mayor a 0."
+            # Imprimir MÍNIMO
+            msg_min = f"  -> MÍNIMO: Nodo '{comp['MinNode']}' con una diferencia de {comp['MinVal']:+.4f}"
             print(msg_min)
             f.write(msg_min + "\n")
             
