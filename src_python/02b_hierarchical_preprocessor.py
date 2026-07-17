@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import gzip
+import lzma
 import itertools
 import numpy as np
 import argparse
@@ -29,10 +30,13 @@ def process_chunk(df_chunk, chunk_name, base_dir="data/hierarchical_comprimidas"
         with open(file_path, 'wb') as f:
             f.write(data_bytes)
             
-        compressed_data = gzip.compress(data_bytes)
+        # compressed_data = gzip.compress(data_bytes)
+        compressed_data = lzma.compress(data_bytes)
         c_x_sizes[col] = len(compressed_data)
         
-        with gzip.open(file_path + '.gz', 'wb') as f_out:
+        # with gzip.open(file_path + '.gz', 'wb') as f_out:
+        #     f_out.write(data_bytes)
+        with lzma.open(file_path + '.xz', 'wb') as f_out:
             f_out.write(data_bytes)
             
     # 2. Comprimir combinaciones (C_XY)
@@ -47,10 +51,13 @@ def process_chunk(df_chunk, chunk_name, base_dir="data/hierarchical_comprimidas"
         with open(pair_file_path, 'wb') as f:
             f.write(combined_bytes)
             
-        compressed_combined = gzip.compress(combined_bytes)
+        # compressed_combined = gzip.compress(combined_bytes)
+        compressed_combined = lzma.compress(combined_bytes)
         c_xy = len(compressed_combined)
         
-        with gzip.open(pair_file_path + '.gz', 'wb') as f_out:
+        # with gzip.open(pair_file_path + '.gz', 'wb') as f_out:
+        #     f_out.write(combined_bytes)
+        with lzma.open(pair_file_path + '.xz', 'wb') as f_out:
             f_out.write(combined_bytes)
             
         weights_records.append({
@@ -66,7 +73,7 @@ def process_chunk(df_chunk, chunk_name, base_dir="data/hierarchical_comprimidas"
     weights_df.to_csv(weights_csv, index=False)
     print(f" -> Exportado pesos para {chunk_name} en: {weights_csv}")
 
-def preprocess_and_split(input_path="data/dataset_estudiantes.csv", target_col="Notas", num_partitions=2):
+def preprocess_and_split(input_path="data/student_productivity_distraction_dataset_20000.csv", target_col="final_grade", num_partitions=2):
     import glob
     import shutil
     
@@ -105,10 +112,20 @@ def preprocess_and_split(input_path="data/dataset_estudiantes.csv", target_col="
     print(f"[*] Ordenando dataset por '{target_col}' de mayor a menor...")
     df = df.sort_values(by=target_col, ascending=False).reset_index(drop=True)
     
-    print(f"[*] Dividiendo en {num_partitions} particiones iguales...")
+    print(f"[*] Dividiendo jerárquicamente en {num_partitions} particiones...")
     
-    chunk_size = len(df) // num_partitions
-    chunks = [df.iloc[i*chunk_size : (i+1)*chunk_size] if i < num_partitions - 1 else df.iloc[i*chunk_size:] for i in range(num_partitions)]
+    def recursive_split(data, k):
+        if k == 1:
+            return [data]
+        mid = len(data) // 2 # mid = 101 // 2 dará como resultado 50
+        left_half = data.iloc[:mid] # left_half = data.iloc[:50] 
+        right_half = data.iloc[mid:] # right_half = data.iloc[50:]
+        
+        left_k = k // 2
+        right_k = k - left_k
+        return recursive_split(left_half, left_k) + recursive_split(right_half, right_k)
+        
+    chunks = recursive_split(df, num_partitions)
     
     half = num_partitions // 2
     for i, chunk in enumerate(chunks):
@@ -123,7 +140,7 @@ def preprocess_and_split(input_path="data/dataset_estudiantes.csv", target_col="
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocesador Jerárquico basado en Clustering Top-Down')
-    parser.add_argument('--target', type=str, default='Notas', help='Columna objetivo para el ordenamiento (ej. Notas)')
+    parser.add_argument('--target', type=str, default='final_grade', help='Columna objetivo para el ordenamiento (ej. G3, final_grade)')
     parser.add_argument('--partitions', type=int, default=8, help='Número par total de particiones (N)') # cambia el default a N para el numero de particiones
     args = parser.parse_args()
     
