@@ -3,6 +3,7 @@ import glob
 import csv
 import itertools
 import networkx as nx
+import json
 
 OUTPUT_DIR = "output"
 
@@ -77,12 +78,12 @@ def compare_topologies(topo_sums):
         
         diffs = {}
         for node in sumsA.keys():
-            diffs[node] = sumsB[node] - sumsA[node]
+            diffs[node] = abs(sumsB[node] - sumsA[node])
             
-        # Máximo absoluto
+        # Mayor cambio (absoluto)
         max_node = max(diffs, key=diffs.get)
 
-        # Minimo absoluto
+        # Menor cambio (absoluto)
         min_node = min(diffs, key=diffs.get)
             
         comparisons.append({
@@ -138,12 +139,12 @@ def main():
             f.write(header + "\n")
             
             # Imprimir MÁXIMO
-            msg_max = f"  -> MÁXIMO: Nodo '{comp['MaxNode']}' con una diferencia de {comp['MaxVal']:+.4f}"
+            msg_max = f"  -> MAYOR CAMBIO (ABS): Nodo '{comp['MaxNode']}' con una diferencia de {comp['MaxVal']:.4f}"
             print(msg_max)
             f.write(msg_max + "\n")
             
             # Imprimir MÍNIMO
-            msg_min = f"  -> MÍNIMO: Nodo '{comp['MinNode']}' con una diferencia de {comp['MinVal']:+.4f}"
+            msg_min = f"  -> MENOR CAMBIO (ABS): Nodo '{comp['MinNode']}' con una diferencia de {comp['MinVal']:.4f}"
             print(msg_min)
             f.write(msg_min + "\n")
             
@@ -153,13 +154,19 @@ def main():
             sorted_diffs = sorted(comp['Diffs'].items(), key=lambda item: item[1], reverse=True)
             
             for node, val in sorted_diffs:
-                print(f"     {node:<20} : {val:+.4f}")
-                f.write(f"     {node:<20} : {val:+.4f}\n")
+                print(f"     {node:<20} : {val:.4f}")
+                f.write(f"     {node:<20} : {val:.4f}\n")
             
             print()
             f.write("\n")
             
+    # Exportar JSON para que otros scripts (como 06b_insights) lo lean fácilmente
+    json_path = os.path.join(OUTPUT_DIR, "topology_comparisons.json")
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump(comparisons, f, indent=4)
+            
     print(f"Proceso completado. Reporte detallado guardado en: {report_path}")
+    print(f"Datos exportados en JSON para insights: {json_path}")
 
 if __name__ == "__main__":
     main()
