@@ -29,7 +29,7 @@ def main():
     # 1. Limpieza
     print("\n[1/4] Limpiando directorios residuales...")
     # Solo limpiamos carpetas data/ y output/. Mantenemos intacto el dataset base.
-    clean_directory("data", exclude_files=["dataset_estudiantes.csv", ".gitkeep"])
+    clean_directory("data", exclude_files=["dataset_estudiantes.csv", "student-por.csv", "student_productivity_distraction_dataset_20000.csv", ".gitkeep"])
     clean_directory("output", exclude_files=[".gitkeep"])
     print("Limpieza completada.")
 
@@ -53,6 +53,8 @@ def main():
     print("\n[4/4] Ejecutando visualizadores y análisis comparativo...")
     run_step(["uv", "run", "src_python/04b_hierarchical_visualizer.py"])
     run_step(["uv", "run", "src_python/05b_topology_comparator.py"])
+    run_step(["uv", "run", "src_python/06b_topology_insights.py"])
+    # run_step(["uv", "run", "src_python/07_bayesian_network.py"])
 
     print("\n=== PIPELINE COMPLETADO EXITOSAMENTE ===")
     print("Puede revisar todos los resultados y el reporte en la carpeta 'output/'.")
