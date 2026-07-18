@@ -73,7 +73,7 @@ def process_chunk(df_chunk, chunk_name, base_dir="data/hierarchical_comprimidas"
     weights_df.to_csv(weights_csv, index=False)
     print(f" -> Exportado pesos para {chunk_name} en: {weights_csv}")
 
-def preprocess_and_split(input_path="data/student_productivity_distraction_dataset_20000.csv", target_col="final_grade", num_partitions=2):
+def preprocess_and_split(input_path="data/student_productivity_distraction_dataset_20000.csv", target_col="final_grade", num_partitions=8):
     import glob
     import shutil
     
@@ -106,42 +106,57 @@ def preprocess_and_split(input_path="data/student_productivity_distraction_datas
         print(f"[ERROR] La columna objetivo '{target_col}' no existe en el dataset.")
         return
 
-    if num_partitions % 2 != 0:
-        raise ValueError("El número de particiones (N) debe ser par para tener igual cantidad de Best y Worst.")
-    
     print(f"[*] Ordenando dataset por '{target_col}' de mayor a menor...")
     df = df.sort_values(by=target_col, ascending=False).reset_index(drop=True)
     
-    print(f"[*] Dividiendo jerárquicamente en {num_partitions} particiones...")
-    
-    def recursive_split(data, k):
-        if k == 1:
-            return [data]
-        mid = len(data) // 2 # mid = 101 // 2 dará como resultado 50
-        left_half = data.iloc[:mid] # left_half = data.iloc[:50] 
-        right_half = data.iloc[mid:] # right_half = data.iloc[50:]
+    # =========================================================================
+    # CONFIGURACIÓN PERSONALIZABLE DE PARTICIONES EXTREMAS
+    # Se genera dinámicamente hasta el 'num_partitions' indicado por terminal.
+    # Por defecto, extrae solo 1 bloque de cada extremo para cualquier 'k'.
+    # =========================================================================
+    PARTITION_CONFIG = {}
+    current_k = 2
+    while current_k <= num_partitions:
+        PARTITION_CONFIG[current_k] = 1 
+        current_k *= 2
         
-        left_k = k // 2
-        right_k = k - left_k
-        return recursive_split(left_half, left_k) + recursive_split(right_half, right_k)
-        
-    chunks = recursive_split(df, num_partitions)
+    # [OPCIONAL] Puedes sobrescribir reglas manualmente aquí.
+    # Ej: PARTITION_CONFIG[4] = 2  (Esto extraería todos los 4 cuartiles)
+    # PARTITION_CONFIG[8] = 2      (Extraería los 2 mejores y 2 peores octiles)
     
-    half = num_partitions // 2
-    for i, chunk in enumerate(chunks):
-        if i < half:
-            chunk_name = f"B{num_partitions}C{i+1}"
-        else:
-            chunk_name = f"W{num_partitions}C{i - half + 1}"
+    print(f"[*] Generando particiones (Hasta N={num_partitions}) usando configuración: {PARTITION_CONFIG}")
+    
+    for k, count in PARTITION_CONFIG.items():
+        if k > len(df): 
+            continue
             
-        process_chunk(chunk, chunk_name)
+        # LÍMITE DE SEGURIDAD: Nunca puedes extraer más de k/2 bloques de un lado.
+        # Ej: Si k=2 (mitades), solo hay 1 mitad superior y 1 inferior. No puedes pedir 2 de cada lado.
+        actual_count = min(count, k // 2)
+            
+        chunk_size = len(df) // k
+        
+        # Extraer los 'actual_count' bloques MEJORES (desde el tope hacia el centro)
+        for i in range(1, actual_count + 1):
+            start_idx = (i - 1) * chunk_size
+            end_idx = i * chunk_size
+            b_chunk = df.iloc[start_idx:end_idx]
+            process_chunk(b_chunk, f"B{k}C{i}")
+            
+        # Extraer los 'actual_count' bloques PEORES (desde el fondo hacia el centro)
+        for i in range(1, actual_count + 1):
+            end_idx = len(df) - ((i - 1) * chunk_size)
+            start_idx = len(df) - (i * chunk_size)
+            if start_idx < 0: start_idx = 0
+            w_chunk = df.iloc[start_idx:end_idx]
+            process_chunk(w_chunk, f"W{k}C{i}")
         
     print("\n[+] Preprocesamiento jerárquico finalizado con éxito.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocesador Jerárquico basado en Clustering Top-Down')
     parser.add_argument('--target', type=str, default='final_grade', help='Columna objetivo para el ordenamiento (ej. G3, final_grade)')
-    parser.add_argument('--partitions', type=int, default=8, help='Número par total de particiones (N)') # cambia el default a N para el numero de particiones
+    parser.add_argument('--partitions', type=int, default=8, help='Número par total de particiones máximas (N)')
     args = parser.parse_args()
     
     preprocess_and_split(target_col=args.target, num_partitions=args.partitions)
