@@ -58,7 +58,7 @@ def visualize_comparison_grid(mst_files, output_png):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Visualizador de Grafos Jerárquicos')
-    parser.add_argument('--algo', type=str, default='prim', choices=['prim', 'kruskal'], help='Algoritmo a visualizar')
+    parser.add_argument('--algo', type=str, default='kruskal', choices=['prim', 'kruskal'], help='Algoritmo a visualizar')
     args = parser.parse_args()
 
     pattern = f"output/mst_edges_{args.algo}_*.csv"
