@@ -64,7 +64,8 @@ compression-distance-mst-analysis/
 │   ├── 02b_hierarchical_preprocessor.py # Preprocesador jerárquico segmentado por notas
 │   ├── 04_visualizer.py                # Visualizador de grafos globales
 │   ├── 04b_hierarchical_visualizer.py  # Visualizador de grafos por partición
-│   └── 05b_topology_comparator.py      # Comparador analítico de topologías
+│   ├── 05b_topology_comparator.py      # Comparador analítico de topologías
+│   └── 06b_topology_insights.py        # Extractor de Variables Principales (rVP) y Conjunto Unión
 ├── src_cpp/                            # Core matemático de alto rendimiento en C++17
 │   ├── edge.h                          # Estructura y abstracción de aristas
 │   ├── prim.h                          # Implementación matemática del algoritmo de Prim
@@ -102,6 +103,7 @@ Este comando:
 3. Compila el motor C++ en `src_cpp/build` usando CMake y ejecuta `./ncd_mst_hierarchical` para procesar todas las particiones con un rendimiento de milisegundos.
 4. Genera la visualización del grid de grafos en `output/mst_hierarchical_comparison.png`.
 5. Ejecuta el comparador de topologías y produce el informe de diferencias en `output/topology_comparison_report.txt`.
+6. Extrae los nodos más disruptivos (rVP) y el conjunto Unión en `output/topology_insights_report.txt`.
 
 ---
 
