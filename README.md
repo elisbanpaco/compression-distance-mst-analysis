@@ -27,9 +27,9 @@ Donde:
 ### 2. Árbol de Expansión Mínima (MST)
 Una vez calculada la matriz de distancias NCD de todas las variables contra todas (matriz simétrica de tamaño $V \times V$), representamos las variables como nodos en un grafo completamente conectado donde el peso de cada arista es la distancia NCD. 
 
-Para extraer la estructura vertebral del sistema de variables sin ciclos y de manera óptima, se extrae el MST. Este árbol conecta todos los nodos de forma tal que la suma total de las distancias (pesos) sea mínima. El proyecto implementa dos algoritmos clásicos de grafos:
+Para extraer la estructura vertebral del sistema de variables sin ciclos y de manera óptima, se extrae el MST. Este árbol conecta todos los nodos de forma tal que la suma total de las distancias (pesos) sea mínima. El proyecto implementa dos algoritmos clásicos de grafos, siendo **Kruskal el algoritmo configurado por defecto** en todo el pipeline (visualización, comparación e insights):
+* **Algoritmo de Kruskal (Default)**: Ordena todas las aristas y las une si no forman ciclos, apoyándose en una estructura de datos eficiente de conjuntos disjuntos (**Union-Find**).
 * **Algoritmo de Prim**: Crece el árbol nodo a nodo a partir de un vértice inicial seleccionando siempre la arista más barata.
-* **Algoritmo de Kruskal**: Ordena todas las aristas y las une si no forman ciclos, apoyándose en una estructura de datos eficiente de conjuntos disjuntos (**Union-Find** o **Disjoint-Set**).
 
 ---
 
@@ -109,14 +109,15 @@ Este comando:
 
 ## 📊 Interpretación de Resultados y Volatilidad Topológica
 
-El análisis de volatilidad topológica (calculado por `05b_topology_comparator.py` e impreso en `output/topology_comparison_report.txt`) utiliza la **distancia de camino más corto en el MST** entre todas las variables. Para cada nodo (variable), se calcula la suma de distancias a todos los demás nodos.
+El análisis de volatilidad topológica (calculado por `05b_topology_comparator.py`) utiliza la **distancia de camino más corto en el MST** entre todas las variables. Para cada nodo, se calcula la suma de distancias a todos los demás y se mide su cambio **absoluto** entre dos particiones cruzadas (ej. $W2C1$ vs $B2C1$).
 
-### Cómo leer las diferencias ($B8C2 - B8C1$):
-* **Una diferencia positiva (MÁXIMO)** significa que una variable se ha alejado (está más desconectada o es más independiente) en la segunda topología en comparación con la primera.
-* **Una diferencia negativa (MÍNIMO)** indica que la variable se ha acercado (ha ganado relevancia o dependencia informativa) en la red de variables.
+### Cómo interpretar los cambios:
+* **Mayor Cambio Absoluto**: Identifica el nodo que sufrió la disrupción estructural más violenta entre los dos grupos estudiantiles. Su rol y conectividad en la red mutó drásticamente.
+* **Menor Cambio Absoluto**: Identifica el nodo más estable (ancla), cuya posición relativa en el árbol de información se mantuvo constante sin importar el grupo.
 
-**Ejemplo práctico:**
-En los resultados estudiantiles, es común notar cómo variables conductuales como `Acceso_Internet` o `Horas_Estudio` cambian drásticamente de posición en el MST de estudiantes de alto rendimiento (donde están estrechamente ligadas a las notas o horas de sueño) vs. estudiantes de bajo rendimiento (donde pueden estar ligadas de forma caótica a la latitud geográfica o edad).
+### Variables Principales de Disrupción (rVP) y Conjunto Unión (`06b`)
+Para sintetizar el análisis entre las múltiples comparaciones, el pipeline extrae las variables que lideran matemáticamente los cambios absolutos (**rVP1, rVP2, etc.**) en cada choque topológico. 
+Posteriormente se genera el **Conjunto Unión**, el cual consolida a todos los nodos que lograron ser Top en al menos una comparación. Este conjunto revela de manera concisa y precisa las variables globalmente responsables de las diferencias conductuales y académicas de todo el dataset.
 
 ---
 
